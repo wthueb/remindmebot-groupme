@@ -1,4 +1,4 @@
-# RemindMeBot for GroupMe
+# remindmebot for groupme
 
 entirely based off of https://github.com/SIlver--/remindmebot-reddit
 
