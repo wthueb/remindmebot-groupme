@@ -25,12 +25,12 @@ def parse_message(message, uid, name, created_at) -> None:
     
     cal = pdt.Calendar()
 
-    new_time = cal.parse(temp, time.localtime(created_at))
+    time_struct, status = cal.parse(temp, time.localtime(created_at))
 
-    if new_time[1] == 0:
+    if status == 0:
         new_time = cal.parse('1 day', time.localtime(created_at))
 
-    epoch = time.mktime(new_time[0])
+    epoch = time.mktime(time_struct)
 
     add_to_db(message, uid, name, created_at, epoch)
 

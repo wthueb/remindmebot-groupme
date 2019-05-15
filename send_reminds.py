@@ -21,7 +21,7 @@ def check_for_reminds() -> list:
 
     rows = c.fetchall()
 
-    return rows
+    return rows, curtime
 
 
 def find_nth(string, search, n) -> int:
@@ -66,8 +66,6 @@ def send_reminds(reminds) -> None:
         send_message(('@{}, you requested this reminder on {}\nthe message: {}').format(
             name, created_at_text, orig_msg), mentions=((uid, name),))
 
-    return time.time()
-
 
 def remove_from_db(reminds, updated_to) -> None:
     c.execute('DELETE FROM reminds WHERE date <= ?', (updated_to,))
@@ -77,8 +75,8 @@ def remove_from_db(reminds, updated_to) -> None:
 
 def main() -> None:
     while True:
-        reminds = check_for_reminds()
-        updated_to = send_reminds(reminds)
+        reminds, updated_to = check_for_reminds()
+        send_reminds(reminds)
         remove_from_db(reminds, updated_to)
 
         time.sleep(5)
