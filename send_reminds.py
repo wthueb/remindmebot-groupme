@@ -47,8 +47,8 @@ def send_message(message, mentions=None) -> None:
                     'user_ids': [mention[0]], 'loci': [(message.find('@'), len(mention[1]) + 1)]}]
             else:
                 payload['attachments'][0]['user_ids'].append(mention[0])
-                payload['attachments'][0]['loci'].extend(find_nth(message, '@', i + 1),
-                        len(mention[1]) + 1)
+                payload['attachments'][0]['loci'].append((find_nth(message, '@', i + 1),
+                        len(mention[1]) + 1))
 
     r = requests.post('https://api.groupme.com/v3/bots/post',
             headers=headers, data=json.dumps(payload))
