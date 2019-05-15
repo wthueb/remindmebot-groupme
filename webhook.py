@@ -35,7 +35,7 @@ def parse_message(message, uid, name, created_at) -> None:
     add_to_db(message, uid, name, created_at, epoch)
 
 
-@app.route('/remindmebot-callback', methods=['POST'])
+@app.route('/api/remindmebot-callback', methods=['POST'])
 def new_message() -> str:
     r = request.get_json()
 
