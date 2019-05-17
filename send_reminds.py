@@ -24,31 +24,15 @@ def check_for_reminds() -> list:
     return rows, curtime
 
 
-def find_nth(string, search, n) -> int:
-    start = string.find(search)
-
-    while start >= 0 and n > 1:
-        start = string.find(search, start + len(search))
-        n -= 1
-
-    return start
-
-
-def send_message(message, mentions=None) -> None:
+def send_message(message, attachments=None) -> None:
     headers = {'content-type': 'application/json'}
     payload = {'text': message, 'bot_id': secret.bot_id}
 
-    if mentions is not None:
-        for i in range(len(mentions)):
-            mention = mentions[i]
+    if attachments:
+        payload['attachments'] = attachments
 
-            if 'attachments' not in payload:
-                payload['attachments'] = [{'type': 'mentions',
-                    'user_ids': [mention[0]], 'loci': [(message.find('@'), len(mention[1]) + 1)]}]
-            else:
-                payload['attachments'][0]['user_ids'].append(mention[0])
-                payload['attachments'][0]['loci'].append((find_nth(message, '@', i + 1),
-                        len(mention[1]) + 1))
+    print(payload)
+    exit()
 
     r = requests.post('https://api.groupme.com/v3/bots/post',
             headers=headers, data=json.dumps(payload))
@@ -59,12 +43,45 @@ def send_message(message, mentions=None) -> None:
 
 def send_reminds(reminds) -> None:
     for row in reminds:
-        orig_msg, uid, name, created_at, date = row
-        
-        created_at_text = time.strftime('%x %-I:%M %p', time.localtime(created_at))
+        orig_msg, uid, name, created_at, attachments, date = row
 
-        send_message(('@{}, you requested this reminder on {}\nthe message: {}').format(
-            name, created_at_text, orig_msg), mentions=((uid, name),))
+        created_at = time.strftime('%x %-I:%M %p', time.localtime(created_at))
+
+        msg = f'@{name}, you requested this reminder on {created_at}\nthe message: {orig_msg}'
+
+        new_attachments = []
+
+        if attachments:
+            attachments = json.loads(attachments)
+
+            for d in attachments:
+                if d['type'] == 'mentions':
+                    # adjust locations of original mentions
+                    loci = d['loci']
+
+                    new_loci = []
+
+                    for loc in loci:
+                        new_loc = []
+
+                        for pos in loc:
+                            new_loc.append(pos + len(msg) - len(orig_msg))
+
+                        new_loci.append(new_loc)
+
+                    d['loci'] = new_loci
+
+                    # add mention of user asked to be reminded
+                    d['user_ids'].append(uid)
+                    d['loci'].append([0, len(name) + 1])
+
+                new_attachments.append(d)
+
+        if not new_attachments:
+            new_attachments.append({'type': 'mentions', 'user_ids': [uid],
+                                    'loci': [[0, len(name) + 1]]})
+
+        send_message(msg, new_attachments)
 
 
 def remove_from_db(reminds, updated_to) -> None:

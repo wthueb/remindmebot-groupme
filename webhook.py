@@ -1,3 +1,4 @@
+import json
 import sqlite3
 import time
 
@@ -8,19 +9,24 @@ import parsedatetime.parsedatetime as pdt
 app = Flask(__name__)
 
 
-def add_to_db(message, uid, name, created_at, date) -> None:
+def add_to_db(message, uid, name, created_at, attachments, date) -> None:
     conn = sqlite3.connect('reminds.db')
 
     c = conn.cursor()
     
-    c.execute('INSERT INTO reminds VALUES (?, ?, ?, ?, ?)', (message, uid, name, created_at, date))
+    if attachments is None:
+        c.execute('INSERT INTO reminds VALUES (?, ?, ?, ?, NULL, ?)',
+                (message, uid, name, created_at, date))
+    else:
+        c.execute('INSERT INTO reminds VALUES (?, ?, ?, ?, ?, ?)',
+                (message, uid, name, created_at, attachments, date))
     
     conn.commit()
 
     conn.close()
 
 
-def parse_message(message, uid, name, created_at) -> None:
+def parse_message(message, uid, name, created_at, attachments) -> None:
     temp = message.replace('-', '/')
     
     cal = pdt.Calendar()
@@ -32,7 +38,7 @@ def parse_message(message, uid, name, created_at) -> None:
 
     epoch = time.mktime(time_struct)
 
-    add_to_db(message, uid, name, created_at, epoch)
+    add_to_db(message, uid, name, created_at, attachments, epoch)
 
 
 @app.route('/api/remindmebot-callback', methods=['POST'])
@@ -44,7 +50,9 @@ def new_message() -> str:
 
     if (('!remindme' in message.lower() or 'remindme!' in message.lower()) and 
             name != 'remindmebot'):
-        parse_message(message, r['user_id'], name, r['created_at'])
+        attachments = str(json.dumps(r['attachments'])) if 'attachments' in r else None
+
+        parse_message(message, r['user_id'], name, r['created_at'], attachments)
 
     return ''
 
