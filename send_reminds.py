@@ -31,11 +31,13 @@ def send_message(message, attachments=None) -> None:
     if attachments:
         payload['attachments'] = attachments
 
+    logging.debug(f'sending payload: {payload}')
+
     r = requests.post('https://api.groupme.com/v3/bots/post',
             headers=headers, data=json.dumps(payload))
 
-    logging.info('sending message: {}'.format(message))
-    logging.info('http response: {}'.format(r.status_code))
+    logging.info(f'sending message: {message}')
+    logging.info(f'http response: {r.status_code}')
 
 
 def send_reminds(reminds) -> None:
