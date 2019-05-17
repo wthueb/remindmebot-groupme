@@ -31,9 +31,6 @@ def send_message(message, attachments=None) -> None:
     if attachments:
         payload['attachments'] = attachments
 
-    print(payload)
-    exit()
-
     r = requests.post('https://api.groupme.com/v3/bots/post',
             headers=headers, data=json.dumps(payload))
 
