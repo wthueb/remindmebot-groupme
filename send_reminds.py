@@ -1,43 +1,89 @@
 import json
 import logging
+import logging.config
 import sqlite3
 import time
 
 import requests
 
-import secret
+import config
 
 
 conn = sqlite3.connect('reminds.db')
 c = conn.cursor()
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.config.dictConfig({
+    'version': 1,
+    'disable_existing_loggers': False,
+
+    'formatters': {
+        'brief': {
+            'format': '%(asctime)s: %(message)s'
+        },
+
+        'precise': {
+            'format': '%(asctime)s %(name)-15s %(levelname)-7s %(message)s'
+        }
+    },
+
+    'handlers': {
+        'stdout': {
+            'class': 'logging.StreamHandler',
+            'stream': 'ext://sys.stdout',
+            'level': 'INFO',
+            'formatter': 'brief'
+        },
+
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'log/remindmebot.log',
+            'maxBytes': 2*1024*1024, # 2 MiB
+            'backupCount': 50,
+            'level': 'DEBUG',
+            'formatter': 'precise'
+        }
+    },
+
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['stdout', 'file']
+    }
+})
+
+logger = logging.getLogger('remindmebot')
 
 
-def check_for_reminds() -> list:
+def check_for_reminds() -> (list, time.struct_time):
     curtime = time.time()
     
     c.execute('SELECT * FROM reminds WHERE date <= ?', (curtime,))
 
     rows = c.fetchall()
 
-    return rows, curtime
+    if rows:
+        logger.info(f'we have {len(reminds)} to send')
+        logger.debug(f'reminds: {rows}')
+
+        return rows, curtime
+
+    return None, None
 
 
 def send_message(message, attachments=None) -> None:
     headers = {'content-type': 'application/json'}
-    payload = {'text': message, 'bot_id': secret.bot_id}
+    payload = {'text': message, 'bot_id': config.BOT_ID}
 
     if attachments:
         payload['attachments'] = attachments
 
-    logging.debug(f'sending payload: {payload}')
+    logger.info('sending reminds...')
+    logger.debug(f'payload: {payload}')
 
     r = requests.post('https://api.groupme.com/v3/bots/post',
             headers=headers, data=json.dumps(payload))
 
-    logging.info(f'sending message: {message}')
-    logging.info(f'http response: {r.status_code}')
+    logger.info(f'sending message: {message}')
+    logger.info(f'http response: {r.status_code}')
 
 
 def send_reminds(reminds) -> None:
@@ -83,17 +129,23 @@ def send_reminds(reminds) -> None:
         send_message(msg, new_attachments)
 
 
-def remove_from_db(reminds, updated_to) -> None:
+def remove_from_db(updated_to) -> None:
+    logger.debug(f'deleted reminds in database up to {updated_to}')
+
     c.execute('DELETE FROM reminds WHERE date <= ?', (updated_to,))
     
     conn.commit()
 
 
 def main() -> None:
+    logger.info('bot started, continually checking for reminds to send every 5 seconds...')
+
     while True:
         reminds, updated_to = check_for_reminds()
-        send_reminds(reminds)
-        remove_from_db(reminds, updated_to)
+
+        if reminds:
+            send_reminds(reminds)
+            remove_from_db(updated_to)
 
         time.sleep(5)
 
