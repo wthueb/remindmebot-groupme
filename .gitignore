@@ -1,6 +1,6 @@
-__pycache__/
-/env/
+__pycache__
+env
+log
 
 reminds.db
-secret.py
-uwsgi.log
+config.py
