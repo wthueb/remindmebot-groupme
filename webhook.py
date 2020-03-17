@@ -35,7 +35,7 @@ logging.config.dictConfig({
         'file': {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': 'log/webhook.log',
-            'maxBytes': 2*1024*1024, # 2 MiB
+            'maxBytes': 2*1024*1024,  # 2 MiB
             'backupCount': 50,
             'level': 'DEBUG',
             'formatter': 'precise'
@@ -57,14 +57,14 @@ def add_to_db(message, uid, name, created_at, attachments, date) -> None:
     conn = sqlite3.connect('reminds.db')
 
     c = conn.cursor()
-    
+
     if attachments is None:
         c.execute('INSERT INTO reminds VALUES (?, ?, ?, ?, NULL, ?)',
-                (message, uid, name, created_at, date))
+                  (message, uid, name, created_at, date))
     else:
         c.execute('INSERT INTO reminds VALUES (?, ?, ?, ?, ?, ?)',
-                (message, uid, name, created_at, attachments, date))
-    
+                  (message, uid, name, created_at, attachments, date))
+
     conn.commit()
 
     conn.close()
@@ -74,7 +74,7 @@ def parse_message(message, uid, name, created_at, attachments) -> None:
     logger.debug(f'parsing message')
 
     temp = message.replace('-', '/')
-    
+
     cal = pdt.Calendar()
 
     curtime = time.localtime(created_at)
@@ -83,7 +83,7 @@ def parse_message(message, uid, name, created_at, attachments) -> None:
 
     if status == 0:
         time_struct = cal.parse('1 day', curtime)
-        
+
         logger.debug(f"couldn't find delay time, defaulting to {time_struct - curtime}")
     else:
         logger.debug('found delay of {time_struct - curtime}')
@@ -102,7 +102,7 @@ def new_message() -> str:
     message = r['text']
     name = r['name']
 
-    if (('!remindme' in message.lower() or 'remindme!' in message.lower()) and 
+    if (('!remindme' in message.lower() or 'remindme!' in message.lower()) and
             name != 'remindmebot'):
         logger.info(f'got a new message from {name} to add to the database')
 

@@ -37,7 +37,7 @@ logging.config.dictConfig({
         'file': {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': 'log/remindmebot.log',
-            'maxBytes': 2*1024*1024, # 2 MiB
+            'maxBytes': 2*1024*1024,  # 2 MiB
             'backupCount': 50,
             'level': 'DEBUG',
             'formatter': 'precise'
@@ -55,13 +55,13 @@ logger = logging.getLogger('remindmebot')
 
 def check_for_reminds() -> (list, time.struct_time):
     curtime = time.time()
-    
+
     c.execute('SELECT * FROM reminds WHERE date <= ?', (curtime,))
 
     rows = c.fetchall()
 
     if rows:
-        logger.info(f'we have {len(reminds)} to send')
+        logger.info(f'we have {len(rows)} to send')
         logger.debug(f'reminds: {rows}')
 
         return rows, curtime
@@ -80,7 +80,7 @@ def send_message(message, attachments=None) -> None:
     logger.debug(f'payload: {payload}')
 
     r = requests.post('https://api.groupme.com/v3/bots/post',
-            headers=headers, data=json.dumps(payload))
+                      headers=headers, data=json.dumps(payload))
 
     logger.info(f'sending message: {message}')
     logger.info(f'http response: {r.status_code}')
@@ -133,7 +133,7 @@ def remove_from_db(updated_to) -> None:
     logger.debug(f'deleted reminds in database up to {updated_to}')
 
     c.execute('DELETE FROM reminds WHERE date <= ?', (updated_to,))
-    
+
     conn.commit()
 
 
