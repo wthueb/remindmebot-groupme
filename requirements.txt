@@ -11,4 +11,4 @@ parsedatetime==2.4
 requests==2.21.0
 urllib3==1.26.5
 uWSGI==2.0.18
-Werkzeug==0.15.2
+Werkzeug==0.15.5
